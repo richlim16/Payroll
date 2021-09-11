@@ -25,9 +25,15 @@ void addEmployee(nPtr *list);
 void insertLast(nPtr *list, nPtr new);
 void insertSorted(nPtr *list, nPtr new);
 employeetype getInfo();
+
 int deleteEmployee(nPtr *list, unsigned int id);
 int editEmployee(nPtr list, unsigned int id);
+
 void displayList(nPtr list);
+void displayEmployee(employeetype e);
+int findEmployee(nPtr list, unsigned int id, employeetype *e); //just scrolls through the list and returns 1 if the employee is found, otherwise returns 0
+void calculatePay(nPtr list);
+
 void saveToFile(char *filename, nPtr list);
 void readFromFile(char *filename, nPtr *list);
 
@@ -39,7 +45,7 @@ int main()
 
   do{
     readFromFile(filename, &list);
-    printf("\n----- MENU -----\na. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\n0. Exit\n\nInput: ");
+    printf("\n----- MENU -----\na. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. Calculate Pay\n0. Exit\n\nInput: ");
     scanf(" %c", &user);fflush(stdin);
 
     switch(tolower(user)){
@@ -59,6 +65,9 @@ int main()
         case 'd':
             displayList(list);
             break;
+        case 'e':
+        	calculatePay(list);
+        	break;
         case '0':
             break;
         default:
@@ -182,6 +191,17 @@ void displayList(nPtr list)
   	printf("----------------------------------------------------------------------------\n");
 }
 
+void displayEmployee(employeetype e)
+{
+	printf("\n\nID: %u", e.id);
+	printf("\nFull Name: %s ", e.name.fname);
+	if(e.name.mi){
+		printf("%c. ", e.name.mi);
+	}
+	printf("%s", e.name.lname);
+	printf("\nRate: %.2f", e.rate);
+}
+
 void saveToFile(char *filename, nPtr list)
 {
     FILE *fp;
@@ -216,4 +236,46 @@ void readFromFile(char *filename, nPtr *list)
     else{
         printf("\nFile may not exist / Error in opening file!");
     }
+}
+
+int findEmployee(nPtr list, unsigned int id, employeetype *e)
+{
+	int retval = 0;
+	while(list != NULL && list->employee.id != id){
+		list = list->next;
+	}
+	if(list != NULL){
+		*e = list->employee;
+		retval = 1;
+	}
+	
+	return retval;
+}
+void calculatePay(nPtr list)
+{
+	unsigned int id;
+	float otpay, normalpay, hrs, ot;
+	employeetype e;
+	
+	printf("\nPlease enter the ID number of the employee: ");
+	scanf("%u", &id);
+	
+	if(findEmployee(list, id, &e)){//findEmployee will return 1 if the employee is found, otherwise returns 0
+		displayEmployee(e);
+		printf("\n\nPlease enter # of hours worked(not including OT): ");
+		scanf("%f", &hrs);
+		printf("Please enter # of hours worked in OT: ");
+		scanf("%f", &ot);
+		
+		normalpay = e.rate * hrs;
+		otpay = e.rate * 1.5 * ot;
+		
+		printf("\nNormal pay: Php %.2f", normalpay);
+		printf("\nOvertime pay(150%): Php %.2f", otpay);
+		printf("\nTotal pay: Php%.2f\n", normalpay+otpay);
+	}
+	else{
+		printf("\nError! Employee with ID %u not found!", id);
+	}
+	
 }
