@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <time.h>
+#include <string.h>
 
 #define SIZE 50
 
@@ -21,6 +23,11 @@ typedef struct node{
   struct node *next;
 }node, *nPtr;
 
+typedef struct{
+	employeetype employee;
+	char time[SIZE];
+}timeStamp;
+
 void addEmployee(nPtr *list);
 void insertLast(nPtr *list, nPtr new);
 void insertSorted(nPtr *list, nPtr new);
@@ -37,15 +44,17 @@ void calculatePay(nPtr list);
 void saveToFile(char *filename, nPtr list);
 void readFromFile(char *filename, nPtr *list);
 
+timeStamp displayPaySlip(unsigned int id, float hoursWork, nPtr list); 
+
 int main()
 {
   nPtr list = NULL;
   char user, filename[SIZE] = "employeelist.dat";
   unsigned int id;
-
+  float hrsWork;
   do{
     readFromFile(filename, &list);
-    printf("\n----- MENU -----\na. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. Calculate Pay\n0. Exit\n\nInput: ");
+    printf("\n----- MENU -----\na. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. Calculate Pay\nf. Generate PaySlip \n0. Exit\n\nInput: ");
     scanf(" %c", &user);fflush(stdin);
 
     switch(tolower(user)){
@@ -68,6 +77,13 @@ int main()
         case 'e':
         	calculatePay(list);
         	break;
+        case 'f':
+        	printf("Input ID of employee to generate PaySlip:\n");
+            scanf("%d", &id);
+            printf("Input horus of work:\n");
+            scanf("%f", &hrsWork);
+        	displayPaySlip(id,hrsWork,list);
+        	break;
         case '0':
             break;
         default:
@@ -76,6 +92,9 @@ int main()
     saveToFile(filename, list);
     list = NULL;
   }while(user != '0');
+
+
+
 
   return 0;
 }
@@ -278,4 +297,46 @@ void calculatePay(nPtr list)
 		printf("\nError! Employee with ID %u not found!", id);
 	}
 	
+}
+
+timeStamp displayPaySlip(unsigned int id,float hoursWork, nPtr list)
+{
+	time_t rawtime;
+    struct tm *info;
+   	char buffer[80];
+   	char date[80];
+   	employeetype e;
+	float normalpay;
+   	time( &rawtime );
+	char stringValue[80];
+	timeStamp retVal;
+	
+   	info = localtime( &rawtime );
+	//transform the structure time details to string
+   	strftime(buffer,80,"%x - %I:%M%p", info);
+   	strftime(date,80,"%B %d, %Y", info);
+	
+	if(findEmployee(list, id, &e)){
+		
+		normalpay = e.rate * hoursWork;
+ 		sprintf(stringValue, "%g", normalpay);	
+ 		
+		printf("\n");
+   		printf("----------------------------------------\n");
+   		printf("%23s\n","COMPANY NAME");
+   		printf("%24s\n\n","sample address");
+   		printf("%5s %d %15s %5s \n","Employee ID: ",e.id, "Date: ",date);
+   		printf("%5s %s %s, %c \n\n","Name: ",e.name.lname,e.name.fname,e.name.mi);
+   		printf("%5s %.2f \n","Number of Hours Work(w/ or w/o OT): ", hoursWork);
+   		printf("%5s %.2f \n","Employee Rate: ",e.rate);
+   		printf("%5s %.2f\n\n","Net Pay: ",normalpay);
+   		printf("%5s %15s \n\n","Prepared By: ", "Approved By: ");
+   		
+   		retVal.employee = e;
+   		strcpy(retVal.time,buffer);
+	} else {
+		printf("Employee Not Found! \n");
+	}
+	
+	return retVal;
 }
