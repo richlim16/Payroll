@@ -80,7 +80,7 @@ int main()
         case 'f':
         	printf("Input ID of employee to generate PaySlip:\n");
             scanf("%d", &id);
-            printf("Input horus of work:\n");
+            printf("Input hours of work:\n");
             scanf("%f", &hrsWork);
         	displayPaySlip(id,hrsWork,list);
         	break;
@@ -202,10 +202,10 @@ int editEmployee(nPtr list, unsigned int id)
 
 void displayList(nPtr list)
 {
-    printf("\n\n%-10s - %-20s - %-5s - %-15s - %8s", "ID", "First Name", "MI", "Last Name", "Pay Rate");
+    printf("\n\n%-10s - %-20s   %-5s   %-15s - %8s", "ID", "First Name", "MI", "Last Name", "Pay Rate");
   	printf("\n----------------------------------------------------------------------------\n\n");
   	for( ; list != NULL; list = list->next){
-  		printf("%-10u - %-20s - %-5c - %-15s - %.2f\n", list->employee.id, list->employee.name.fname, list->employee.name.mi, list->employee.name.lname, list->employee.rate);
+  		printf("%-10u - %-20s   %-5c   %-15s - %.2f\n", list->employee.id, list->employee.name.fname, list->employee.name.mi, list->employee.name.lname, list->employee.rate);
   	}
   	printf("----------------------------------------------------------------------------\n");
 }
