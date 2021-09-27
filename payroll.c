@@ -44,14 +44,14 @@ void calculatePay(nPtr list);
 void saveToFile(char *filename, nPtr list);
 void readFromFile(char *filename, nPtr *list);
 
-timeStamp displayPaySlip(unsigned int id, float hoursWork, nPtr list); 
+timeStamp displayPaySlip(unsigned int id, float hoursWork, float overTime, nPtr list); 
 
 int main()
 {
   nPtr list = NULL;
   char user, filename[SIZE] = "employeelist.dat";
   unsigned int id;
-  float hrsWork;
+  float hrsWork, overTime;
   do{
     readFromFile(filename, &list);
     printf("\n----- MENU -----\na. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. Calculate Pay\nf. Generate PaySlip \n0. Exit\n\nInput: ");
@@ -82,7 +82,9 @@ int main()
             scanf("%d", &id);
             printf("Input hours of work:\n");
             scanf("%f", &hrsWork);
-        	displayPaySlip(id,hrsWork,list);
+            printf("Input hours of OverTime(Optional-- Enter 0(zero) for empty value)):\n");
+            scanf("%f", &overTime);
+        	displayPaySlip(id,hrsWork,overTime,list);
         	break;
         case '0':
             break;
@@ -299,7 +301,7 @@ void calculatePay(nPtr list)
 	
 }
 
-timeStamp displayPaySlip(unsigned int id,float hoursWork, nPtr list)
+timeStamp displayPaySlip(unsigned int id,float hoursWork,float overTime,nPtr list)
 {
 	time_t rawtime;
     struct tm *info;
@@ -310,6 +312,7 @@ timeStamp displayPaySlip(unsigned int id,float hoursWork, nPtr list)
    	time( &rawtime );
 	char stringValue[80];
 	timeStamp retVal;
+	float otpay = 0;
 	
    	info = localtime( &rawtime );
 	//transform the structure time details to string
@@ -319,7 +322,9 @@ timeStamp displayPaySlip(unsigned int id,float hoursWork, nPtr list)
 	if(findEmployee(list, id, &e)){
 		
 		normalpay = e.rate * hoursWork;
- 		sprintf(stringValue, "%g", normalpay);	
+		if(overTime != 0){
+			otpay = e.rate * 1.5 * overTime;
+		} 		
  		
 		printf("\n");
    		printf("----------------------------------------\n");
@@ -327,9 +332,14 @@ timeStamp displayPaySlip(unsigned int id,float hoursWork, nPtr list)
    		printf("%24s\n\n","sample address");
    		printf("%5s %d %15s %5s \n","Employee ID: ",e.id, "Date: ",date);
    		printf("%5s %s %s, %c \n\n","Name: ",e.name.lname,e.name.fname,e.name.mi);
-   		printf("%5s %.2f \n","Number of Hours Work(w/ or w/o OT): ", hoursWork);
+   		printf("%5s %.2f \n","Number of Hours Work: ", hoursWork);
+   		printf("%5s %.2f \n","Total OT: ", overTime);
    		printf("%5s %.2f \n","Employee Rate: ",e.rate);
-   		printf("%5s %.2f\n\n","Net Pay: ",normalpay);
+   		printf("%5s %.2f\n","Normal Pay: ",normalpay);
+   		if(otpay != 0 ){
+   			printf("%5s %.2f\n","Overtime Pay: ",otpay);
+		}
+		printf("%5s %.2f\n\n","Net Pay: ",normalpay+otpay);
    		printf("%5s %15s \n\n","Prepared By: ", "Approved By: ");
    		
    		retVal.employee = e;
