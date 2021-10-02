@@ -115,7 +115,13 @@ int main()
 void addEmployee(nPtr *list)
 {
     nPtr new = (nPtr)malloc(sizeof(node));
-    new->employee = getInfo();
+    employeetype temp;
+    do {
+    	new->employee = getInfo();
+    	if (findEmployee(*list,new->employee.id,&temp)) {
+    		printf("\nID already exists please try again.\n");
+		}
+	} while(findEmployee(*list,new->employee.id,&temp));
     insertSorted(list, new);
     printf("\nSuccessfully inserted new employee.");
 }
@@ -161,7 +167,7 @@ void insertSorted(nPtr *list, nPtr new)
     }
 }
 
-employeetype getInfo()
+	employeetype getInfo()
 {
     employeetype new;
 
