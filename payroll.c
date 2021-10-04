@@ -117,13 +117,7 @@ int main()
 void addEmployee(nPtr *list)
 {
     nPtr new = (nPtr)malloc(sizeof(node));
-    employeetype temp;
-    do {
-    	new->employee = getInfo();
-    	if (findEmployee(*list,new->employee.id,&temp)) {
-    		printf("\nID already exists please try again.\n");
-		}
-	} while(findEmployee(*list,new->employee.id,&temp));
+    new->employee = getInfo();
     insertSorted(list, new);
     printf("\nSuccessfully inserted new employee.");
 }
@@ -169,7 +163,7 @@ void insertSorted(nPtr *list, nPtr new)
     }
 }
 
-	employeetype getInfo()
+employeetype getInfo()
 {
     employeetype new;
 
@@ -377,7 +371,7 @@ float calculateSSSContribution(float grosspay)
 	float minVal = 3250;	//minimum monthly salary
 	float maxVal;	//to be set if the grosspay is greater than the minimum value
 	float rangeDifference = 499.99;	//the difference between the ranges, this is added to the maximum value when the ranges increase
-	float SSSContribution = .13;	//total SSS Contribution percentage effective January 2021
+	float SSSContribution = .045;	//total SSS Contribution percentage for employees effective January 2021
 	//=====base values=====
 	
 	//=====max values=====
@@ -430,7 +424,7 @@ float calculatePagIbigContribution(float grosspay)
 	
 	float retVal = 0.00;
 	
-	if(grosspay >= 1000 || grosspay <= 1500){
+	if(grosspay >= 1000 && grosspay <= 1500){
 		retVal = grosspay * lowerContribution;
 	} else {
 		retVal = grosspay * higherContribution;
@@ -441,12 +435,12 @@ float calculatePagIbigContribution(float grosspay)
 
 float calculatePhilHealthContribution(float grosspay)
 {
-	//based on the PhilHealth Premium Rate for 2021
+	//based on the PhilHealth Premium Rate for 2020 (PhilHealth is still following the 2020 rate)
 	float low_monthly_salary = 10000;
 	float mid_monthly_salary_minimum = 10000.01;
 	float mid_monthly_salary_maximum = 69999.99;
 	float high_monthly_salary = 70000.00;
-	float monthly_premium_rate = 0.035;
+	float monthly_premium_rate = 0.03;
 	
 	//employee share
 	int employee_share = 2;
@@ -483,8 +477,6 @@ timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtime
 	float grosspay;
 	float otpay;
 	float netpay;
-	float totalSSSContribution;
-	float totalPagIbigContribution;
 	float totalEmployeeContributions = 0;
 	
 	info = localtime( &rawtime );
