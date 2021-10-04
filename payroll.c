@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <string.h>
+#include "alt.h"
 
 #define SIZE 50
 
@@ -58,8 +59,13 @@ int main()
   float hrsWork, overTime;
   do{
     readFromFile(filename, &list);
-    printf("\n----- MENU -----\na. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. Calculate Pay\nf. Generate PaySlip \ng. [beta]Generate Payslip with Tax \n0. Exit\n\nInput: ");
+    setcolor(GRAY,BLACK);
+    printf("\n----- MENU -----\n");
+    setcolor(WHITE,BLACK);
+    printf("a. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. Calculate Pay\nf. Generate PaySlip \ng. [beta]Generate Payslip with Tax \n0. Exit\n\nInput: ");
     scanf(" %c", &user);fflush(stdin);
+    
+    clrscr();
 
     switch(tolower(user)){
         case 'a':
@@ -90,7 +96,7 @@ int main()
           	scanf("%f", &overTime);
         	displayPaySlip(id,hrsWork,overTime,list);
         	break;
-        case 'g':	
+        case 'g':
         	printf("Input ID of employee to generate PaySlip:\n");
           	scanf("%d", &id);
           	printf("Input hours of work:\n");
@@ -118,8 +124,15 @@ void addEmployee(nPtr *list)
 {
     nPtr new = (nPtr)malloc(sizeof(node));
     new->employee = getInfo();
-    insertSorted(list, new);
-    printf("\nSuccessfully inserted new employee.");
+    
+    employeetype e;
+    
+    if(findEmployee(*list, new->employee.id, &e)){
+    	printf("\nEmployee #%d already exists!\n", e.id);
+	} else {
+		insertSorted(list, new);
+    	printf("\nSuccessfully inserted new employee.\n");
+	}
 }
 
 void insertLast(nPtr *list, nPtr new)
@@ -190,10 +203,10 @@ int deleteEmployee(nPtr *list, unsigned int id)
       if(x == id){
           *list = (*list)->next;
           retVal = 1;
-          printf("\nSuccessfully delete employee #%u", id);
+          printf("\nSuccessfully deleted employee #%u!\n", id);
       }
       else{
-          printf("\nFailed to find employee #%u", id);
+          printf("\nFailed to find employee #%u!\n", id);
       }
 
       return retVal;
@@ -217,12 +230,16 @@ int editEmployee(nPtr list, unsigned int id)
 
 void displayList(nPtr list)
 {
+	setcolor(GRAY,BLACK);
     printf("\n\n%-10s - %-20s   %-5s   %-15s - %8s", "ID", "First Name", "MI", "Last Name", "Pay Rate");
   	printf("\n----------------------------------------------------------------------------\n\n");
+  	setcolor(WHITE,BLACK);
   	for( ; list != NULL; list = list->next){
   		printf("%-10u - %-20s   %-5c   %-15s - %.2f\n", list->employee.id, list->employee.name.fname, list->employee.name.mi, list->employee.name.lname, list->employee.rate);
   	}
+  	setcolor(GRAY,BLACK);
   	printf("----------------------------------------------------------------------------\n");
+  	setcolor(WHITE,BLACK);
 }
 
 void displayEmployee(employeetype e)
@@ -306,10 +323,10 @@ void calculatePay(nPtr list)
 		
 		printf("\nNormal pay: Php %.2f", normalpay);
 		printf("\nOvertime pay(150%): Php %.2f", otpay);
-		printf("\nTotal pay: Php%.2f\n", normalpay+otpay);
+		printf("\nTotal pay: Php %.2f\n", normalpay+otpay);
 	}
 	else{
-		printf("\nError! Employee with ID %u not found!", id);
+		printf("\nError! Employee with ID %u not found!\n", id);
 	}
 	
 }
