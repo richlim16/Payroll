@@ -47,6 +47,8 @@ void readFromFile(char *filename, nPtr *list);
 timeStamp displayPaySlip(unsigned int id, float hoursWork, float overTime, nPtr list);
 timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtimeHours, nPtr list);
 float calculateSSSContribution(float grosspay);
+float calculatePagIbigContribution(float grosspay);
+float calculatePhilHealthContribution(float grosspay);
 
 int main()
 {
@@ -412,6 +414,53 @@ float calculateSSSContribution(float grosspay)
 	return retVal;
 }
 
+float calculatePagIbigContribution(float grosspay)
+{
+	//if monthly basic salary is between 1,000.00 and 1,500.00
+	float lowerContribution = 0.01;
+	
+	//if monthly basic salary is higher than 1,500.00
+	float higherContribution = 0.02;
+	
+	float retVal = 0.00;
+	
+	if(grosspay >= 1000 || grosspay <= 1500){
+		retVal = grosspay * lowerContribution;
+	} else {
+		retVal = grosspay * higherContribution;
+	}
+	
+	return retVal;
+}
+
+float calculatePhilHealthContribution(float grosspay)
+{
+	//based on the PhilHealth Premium Rate for 2021
+	float low_monthly_salary = 10000;
+	float mid_monthly_salary_minimum = 10000.01;
+	float mid_monthly_salary_maximum = 69999.99;
+	float high_monthly_salary = 70000.00;
+	float monthly_premium_rate = 0.035;
+	
+	//employee share
+	int employee_share = 2;
+	
+	//fixed rates
+	int low_fixed_rate = 175;
+	int high_fixed_rate = 1225;
+	
+	float retVal = 0;
+	
+	if(grosspay <= low_monthly_salary){
+		retVal = low_fixed_rate;
+	} else if(grosspay >= mid_monthly_salary_minimum && grosspay <= mid_monthly_salary_maximum){
+		retVal = (grosspay * monthly_premium_rate) / employee_share;
+	} else {
+		retVal = high_fixed_rate;
+	}
+	return retVal;
+}
+
 timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtimeHours, nPtr list)
 {
 	time_t rawtime;
@@ -429,6 +478,8 @@ timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtime
 	float otpay;
 	float netpay;
 	float totalSSSContribution;
+	float totalPagIbigContribution;
+	float totalEmployeeContributions = 0;
 	
 	info = localtime( &rawtime );
 	//transform the structure time details to string
@@ -439,10 +490,12 @@ timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtime
 		
 		normalpay = e.rate * hoursWork;
 		
-		otpay = e.rate * 1.5 * overtimeHours;
+		otpay = (e.rate * 1.5) * overtimeHours;
 		grosspay = (normalpay * avgWorkingDays) + otpay;
-		totalSSSContribution = calculateSSSContribution(grosspay);
-		netpay = grosspay - totalSSSContribution;
+		totalEmployeeContributions += calculateSSSContribution(grosspay);
+		totalEmployeeContributions += calculatePagIbigContribution(grosspay);
+		totalEmployeeContributions += calculatePhilHealthContribution(grosspay);
+		netpay = grosspay - totalEmployeeContributions;
 		
  		sprintf(stringValue, "%g", normalpay);	
  		
@@ -455,7 +508,7 @@ timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtime
    		printf("%5s %.2f \n","Number of Hours Work(w/ or w/o OT): ", hoursWork);
    		printf("%5s %.2f \n\n","Employee Rate: ",e.rate);
    		printf("%5s %.2f\n","Gross Pay(including Overtime Compensation): ",grosspay);
-   		printf("%5s %.2f \n\n","Total SSS Contribution: ",totalSSSContribution);
+   		printf("%5s %.2f \n\n","Total Employee Contributions: ",totalEmployeeContributions);
    		printf("%5s %.2f\n","Net Pay(amount after deductions): ",netpay);
    		printf("%5s %15s \n\n","Prepared By: ", "Approved By: ");
    		printf("------------------------------------------------------------\n");
