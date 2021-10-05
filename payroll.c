@@ -44,17 +44,21 @@ void calculatePay(nPtr list);
 void saveToFile(char *filename, nPtr list);
 void readFromFile(char *filename, nPtr *list);
 
-timeStamp displayPaySlip(unsigned int id, float hoursWork, nPtr list); 
+timeStamp displayPaySlip(unsigned int id, float hoursWork, float overTime, nPtr list);
+timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtimeHours, nPtr list);
+float calculateSSSContribution(float grosspay);
+float calculatePagIbigContribution(float grosspay);
+float calculatePhilHealthContribution(float grosspay);
 
 int main()
 {
   nPtr list = NULL;
   char user, filename[SIZE] = "employeelist.dat";
   unsigned int id;
-  float hrsWork;
+  float hrsWork, overTime;
   do{
     readFromFile(filename, &list);
-    printf("\n----- MENU -----\na. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. Calculate Pay\nf. Generate PaySlip \n0. Exit\n\nInput: ");
+    printf("\n----- MENU -----\na. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. Calculate Pay\nf. Generate PaySlip \ng. [beta]Generate Payslip with Tax \n0. Exit\n\nInput: ");
     scanf(" %c", &user);fflush(stdin);
 
     switch(tolower(user)){
@@ -79,10 +83,21 @@ int main()
         	break;
         case 'f':
         	printf("Input ID of employee to generate PaySlip:\n");
-            scanf("%d", &id);
-            printf("Input hours of work:\n");
-            scanf("%f", &hrsWork);
-        	displayPaySlip(id,hrsWork,list);
+          	scanf("%d", &id);
+          	printf("Input hours of work:\n");
+          	scanf("%f", &hrsWork);
+          	printf("Input hours of OverTime(Optional-- Enter 0(zero) for empty value)):\n");
+          	scanf("%f", &overTime);
+        	displayPaySlip(id,hrsWork,overTime,list);
+        	break;
+        case 'g':	
+        	printf("Input ID of employee to generate PaySlip:\n");
+          	scanf("%d", &id);
+          	printf("Input hours of work:\n");
+          	scanf("%f", &hrsWork);
+          	printf("Input hours of overtime work:\n");
+          	scanf("%f", &overTime);
+        	displayPaySlipWithTax(id,hrsWork,overTime,list);
         	break;
         case '0':
             break;
@@ -299,7 +314,7 @@ void calculatePay(nPtr list)
 	
 }
 
-timeStamp displayPaySlip(unsigned int id,float hoursWork, nPtr list)
+timeStamp displayPaySlip(unsigned int id,float hoursWork,float overTime,nPtr list)
 {
 	time_t rawtime;
     struct tm *info;
@@ -310,6 +325,7 @@ timeStamp displayPaySlip(unsigned int id,float hoursWork, nPtr list)
    	time( &rawtime );
 	char stringValue[80];
 	timeStamp retVal;
+	float otpay = 0;
 	
    	info = localtime( &rawtime );
 	//transform the structure time details to string
@@ -319,7 +335,9 @@ timeStamp displayPaySlip(unsigned int id,float hoursWork, nPtr list)
 	if(findEmployee(list, id, &e)){
 		
 		normalpay = e.rate * hoursWork;
- 		sprintf(stringValue, "%g", normalpay);	
+		if(overTime != 0){
+			otpay = e.rate * 1.5 * overTime;
+		} 		
  		
 		printf("\n");
    		printf("----------------------------------------\n");
@@ -327,15 +345,176 @@ timeStamp displayPaySlip(unsigned int id,float hoursWork, nPtr list)
    		printf("%24s\n\n","sample address");
    		printf("%5s %d %15s %5s \n","Employee ID: ",e.id, "Date: ",date);
    		printf("%5s %s %s, %c \n\n","Name: ",e.name.lname,e.name.fname,e.name.mi);
-   		printf("%5s %.2f \n","Number of Hours Work(w/ or w/o OT): ", hoursWork);
+   		printf("%5s %.2f \n","Number of Hours Work: ", hoursWork);
+   		printf("%5s %.2f \n","Total OT: ", overTime);
    		printf("%5s %.2f \n","Employee Rate: ",e.rate);
-   		printf("%5s %.2f\n\n","Net Pay: ",normalpay);
+   		printf("%5s %.2f\n","Normal Pay: ",normalpay);
+   		if(otpay != 0 ){
+   			printf("%5s %.2f\n","Overtime Pay: ",otpay);
+		}
+		printf("%5s %.2f\n\n","Net Pay: ",normalpay+otpay);
    		printf("%5s %15s \n\n","Prepared By: ", "Approved By: ");
    		
    		retVal.employee = e;
    		strcpy(retVal.time,buffer);
 	} else {
 		printf("Employee Not Found! \n");
+	}
+	
+	return retVal;
+}
+
+float calculateSSSContribution(float grosspay)
+{
+	//=====base values=====
+	int credit = 3000;	//minimum credit value
+	float minVal = 3250;	//minimum monthly salary
+	float maxVal;	//to be set if the grosspay is greater than the minimum value
+	float rangeDifference = 499.99;	//the difference between the ranges, this is added to the maximum value when the ranges increase
+	float SSSContribution = .045;	//total SSS Contribution percentage for employees effective January 2021
+	//=====base values=====
+	
+	//=====max values=====
+	int maxRangeValue = 24750; //max range value for monthly salary
+	int maxCredit = 20000; //max credit value 
+	//=====max values=====
+	
+	int creditIncrement = 500;	//credit increments on every loop until the correct compensation range is found
+	float retVal;	//to be assigned the total SSS Contribution which is deducted from the monthly salary
+	
+	if( grosspay < maxRangeValue ){
+		
+		if(grosspay <= minVal){
+			retVal = credit * SSSContribution;	
+		} else {
+			maxVal = minVal;
+			maxVal += rangeDifference;
+			
+			while( !(grosspay >= minVal && grosspay <= maxVal) && minVal != maxRangeValue){
+				if(credit == maxCredit){
+					credit = maxCredit;
+				} else {
+					credit += creditIncrement;
+				}	
+				maxVal = minVal = ceil(maxVal);
+				maxVal += rangeDifference;
+			}
+			
+			if(minVal == maxRangeValue){
+				retVal = credit * SSSContribution;
+			}
+
+      //the increment always stops a level lower than the proper compensation range, will fix 
+			retVal = (credit + creditIncrement) * SSSContribution;			
+		}
+		
+	} else {
+		retVal = maxCredit * SSSContribution;
+	}
+	return retVal;
+}
+
+float calculatePagIbigContribution(float grosspay)
+{
+	//if monthly basic salary is between 1,000.00 and 1,500.00
+	float lowerContribution = 0.01;
+	
+	//if monthly basic salary is higher than 1,500.00
+	float higherContribution = 0.02;
+	
+	float retVal = 0.00;
+	
+	if(grosspay >= 1000 && grosspay <= 1500){
+		retVal = grosspay * lowerContribution;
+	} else {
+		retVal = grosspay * higherContribution;
+	}
+	
+	return retVal;
+}
+
+float calculatePhilHealthContribution(float grosspay)
+{
+	//based on the PhilHealth Premium Rate for 2020 (PhilHealth is still following the 2020 rate)
+	float low_monthly_salary = 10000;
+	float mid_monthly_salary_minimum = 10000.01;
+	float mid_monthly_salary_maximum = 69999.99;
+	float high_monthly_salary = 70000.00;
+	float monthly_premium_rate = 0.03;
+	
+	//employee share
+	int employee_share = 2;
+	
+	//fixed rates
+	int low_fixed_rate = 175;
+	int high_fixed_rate = 1225;
+	
+	float retVal = 0;
+	
+	if(grosspay <= low_monthly_salary){
+		retVal = low_fixed_rate;
+	} else if(grosspay >= mid_monthly_salary_minimum && grosspay <= mid_monthly_salary_maximum){
+		retVal = (grosspay * monthly_premium_rate) / employee_share;
+	} else {
+		retVal = high_fixed_rate;
+	}
+	return retVal;
+}
+
+timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtimeHours, nPtr list)
+{
+	time_t rawtime;
+	struct tm *info;
+	char buffer[80];
+	char date[80];
+	employeetype e;
+	float normalpay;
+	time( &rawtime );
+	char stringValue[80];
+	timeStamp retVal;
+	
+	int avgWorkingDays = 21;
+	float grosspay;
+	float otpay;
+	float netpay;
+	float totalEmployeeContributions = 0;
+	
+	info = localtime( &rawtime );
+	//transform the structure time details to string
+	strftime(buffer,80,"%x - %I:%M%p", info);
+	strftime(date,80,"%B %d, %Y", info);
+	
+	if(findEmployee(list, id, &e)){
+		
+		normalpay = e.rate * hoursWork;
+		
+		otpay = (e.rate * 1.5) * overtimeHours;
+		grosspay = (normalpay * avgWorkingDays) + otpay;
+		totalEmployeeContributions += calculateSSSContribution(grosspay);
+		totalEmployeeContributions += calculatePagIbigContribution(grosspay);
+		totalEmployeeContributions += calculatePhilHealthContribution(grosspay);
+		netpay = grosspay - totalEmployeeContributions;
+		
+ 		sprintf(stringValue, "%g", normalpay);	
+ 		
+	  	printf("\n\n");
+   		printf("------------------------------------------------------------\n");
+   		printf("%23s\n","COMPANY NAME");
+   		printf("%24s\n\n","sample address");
+   		printf("%5s %d %15s %5s \n","Employee ID: ",e.id, "Date: ",date);
+   		printf("%5s %s %s, %c \n\n","Name: ",e.name.lname,e.name.fname,e.name.mi);
+   		printf("%5s %.2f \n","Number of Hours Work(w/ or w/o OT): ", hoursWork);
+   		printf("%5s %.2f \n\n","Employee Rate: ",e.rate);
+   		printf("%5s %.2f\n","Gross Pay(including Overtime Compensation): ",grosspay);
+   		printf("%5s %.2f \n\n","Total Employee Contributions: ",totalEmployeeContributions);
+   		printf("%5s %.2f\n","Net Pay(amount after deductions): ",netpay);
+   		printf("%5s %15s \n\n","Prepared By: ", "Approved By: ");
+   		printf("------------------------------------------------------------\n");
+   		
+   		retVal.employee = e;
+   		strcpy(retVal.time,buffer);
+	} else {
+		  printf("Employee Not Found! \n");
 	}
 	
 	return retVal;
