@@ -25,8 +25,15 @@ typedef struct node{
 
 typedef struct{
 	employeetype employee;
+	float grosspay;
 	char time[SIZE];
+	char date[SIZE];
 }timeStamp;
+
+typedef struct timeNode{
+	timeStamp timeStamp;
+	struct timeNode *next; 
+}timeNode, *tnPtr;
 
 void addEmployee(nPtr *list);
 void insertLast(nPtr *list, nPtr new);
@@ -44,23 +51,30 @@ void calculatePay(nPtr list);
 void saveToFile(char *filename, nPtr list);
 void readFromFile(char *filename, nPtr *list);
 
-timeStamp displayPaySlip(unsigned int id, float hoursWork, float overTime, nPtr list);
+timeStamp displayPaySlip(unsigned int id, float hoursWork, float overTime, nPtr list, tnPtr tnList);
 timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtimeHours, nPtr list);
 float calculateSSSContribution(float grosspay);
 float calculatePagIbigContribution(float grosspay);
 float calculatePhilHealthContribution(float grosspay);
 
+void addPayslipToList(timeStamp timeStamp, tnPtr *tnList);
+void appendPayslipToFile(char *payslipFileName, timeStamp timeStamp);
+void readFromPayslipFile(char *payslipFileName, tnPtr *tnList);
+void showPayslipHistoryData(tnPtr tnList);
 int main()
 {
   nPtr list = NULL;
-  char user, filename[SIZE] = "employeelist.dat";
+  tnPtr tnList = NULL;
+  char user, filename[SIZE] = "employeelist.dat", payslipFileName[SIZE] = "paysliplist.dat";
   unsigned int id;
   float hrsWork, overTime;
   do{
     readFromFile(filename, &list);
-    printf("\n----- MENU -----\na. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. Calculate Pay\nf. Generate PaySlip \ng. [beta]Generate Payslip with Tax \n0. Exit\n\nInput: ");
-    scanf(" %c", &user);fflush(stdin);
+    readFromPayslipFile(payslipFileName, &tnList);
 
+    printf("\n----- MENU -----\na. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. Calculate Pay\nf. Generate PaySlip \ng. [beta]Generate Payslip with Tax \nh. Show Payslip History \n0. Exit\n\nInput: ");
+	scanf(" %c", &user);fflush(stdin);
+	
     switch(tolower(user)){
         case 'a':
             addEmployee(&list);
@@ -88,7 +102,7 @@ int main()
           	scanf("%f", &hrsWork);
           	printf("Input hours of OverTime(Optional-- Enter 0(zero) for empty value)):\n");
           	scanf("%f", &overTime);
-        	displayPaySlip(id,hrsWork,overTime,list);
+        	displayPaySlip(id,hrsWork,overTime,list,tnList);
         	break;
         case 'g':	
         	printf("Input ID of employee to generate PaySlip:\n");
@@ -99,6 +113,9 @@ int main()
           	scanf("%f", &overTime);
         	displayPaySlipWithTax(id,hrsWork,overTime,list);
         	break;
+		case 'h':
+			showPayslipHistoryData(tnList);
+			break;
         case '0':
             break;
         default:
@@ -272,6 +289,39 @@ void readFromFile(char *filename, nPtr *list)
     }
 }
 
+void readFromPayslipFile(char *payslipFileName, tnPtr *tnList)
+{
+    FILE *fp;
+    tnPtr temp, *trav;
+	int count=0;
+    fp = fopen(payslipFileName, "r");
+    if(fp != NULL){
+        temp = (tnPtr)malloc(sizeof(timeNode));
+        while(fread(&temp->timeStamp, sizeof(timeStamp), 1, fp)){
+            /* insert to the tn list */
+			temp->next = NULL;
+          	
+            if(*tnList == NULL){
+            	*tnList = temp;
+
+			 }
+			else{
+			 	for(trav = tnList; (*trav) != NULL; trav = &(*trav)->next){}
+				 (*trav) = temp;
+			 }
+            
+            temp = (tnPtr)malloc(sizeof(timeNode));
+        }
+
+        fclose(fp);
+    }
+    else{
+        printf("\nFile may not exist / Error in opening file!");
+    }
+    
+
+}
+
 int findEmployee(nPtr list, unsigned int id, employeetype *e)
 {
 	int retval = 0;
@@ -314,7 +364,7 @@ void calculatePay(nPtr list)
 	
 }
 
-timeStamp displayPaySlip(unsigned int id,float hoursWork,float overTime,nPtr list)
+timeStamp displayPaySlip(unsigned int id,float hoursWork,float overTime,nPtr list, tnPtr tnList)
 {
 	time_t rawtime;
     struct tm *info;
@@ -356,12 +406,78 @@ timeStamp displayPaySlip(unsigned int id,float hoursWork,float overTime,nPtr lis
    		printf("%5s %15s \n\n","Prepared By: ", "Approved By: ");
    		
    		retVal.employee = e;
+		retVal.grosspay = normalpay+otpay;
    		strcpy(retVal.time,buffer);
+		strcpy(retVal.date, date);
+   		addPayslipToList(retVal, &tnList);
+
+		appendPayslipToFile("paysliplist.dat", retVal);
+   		
 	} else {
 		printf("Employee Not Found! \n");
 	}
-	
 	return retVal;
+}
+
+void addPayslipToList(timeStamp newtimeStamp, tnPtr *tnList){
+	tnPtr *trav;
+	tnPtr new = (tnPtr)malloc(sizeof(timeNode));
+	new->timeStamp = newtimeStamp;
+	
+	if(*tnList == NULL){
+		*tnList = new;
+	}else{
+		for(trav = tnList; (*trav)->next != NULL; trav = &(*trav)->next){}
+		(*trav)->next = new;
+	}
+}
+
+void showPayslipHistoryData(tnPtr tnList){
+	
+	tnPtr trav;
+   	printf("\n----------------------------------------\n");
+   	printf("%30s\n","Payslip History");
+	printf("----------------------------------------\n");
+	for(trav = tnList; trav != NULL; trav = trav->next){
+		
+		printf("Date:\t %s \t\n", trav->timeStamp.date);
+		printf("     \t %s \t\n", trav->timeStamp.time);
+
+		printf("\n\n %s %c %s \t ID: %d \n", trav->timeStamp.employee.name.fname, trav->timeStamp.employee.name.mi, trav->timeStamp.employee.name.lname,trav->timeStamp.employee.id);
+		printf("Total Pay: %.2f\n\n", trav->timeStamp.grosspay);
+		printf("----------------------------------------\n");
+	}
+}
+
+void savePayslipListToFile(char *payslipFileName, tnPtr tnList){
+	FILE *fp;
+    fp = fopen(payslipFileName, "w");
+
+    if(fp != NULL){
+        for( ; tnList != NULL; tnList = tnList->next){
+            fwrite(&tnList->timeStamp, sizeof(timeStamp), 1, fp);
+        }
+
+        fclose(fp);
+    }
+    else{
+        printf("\nError in saving data!");
+    }
+}
+
+void appendPayslipToFile(char *payslipFileName, timeStamp timeStamp){
+	FILE *fp;
+    fp = fopen(payslipFileName, "a");
+
+    if(fp != NULL){
+		fwrite(&timeStamp, 1, sizeof(timeStamp), fp);
+		printf("\n\nPayslip saved on data\n\n");
+        fclose(fp);
+    }
+    else{
+        printf("\nError in saving data!");
+    }
+    
 }
 
 float calculateSSSContribution(float grosspay)
@@ -396,7 +512,7 @@ float calculateSSSContribution(float grosspay)
 				} else {
 					credit += creditIncrement;
 				}	
-				maxVal = minVal = ceil(maxVal);
+//				maxVal = minVal = ceil(maxVal);
 				maxVal += rangeDifference;
 			}
 			
