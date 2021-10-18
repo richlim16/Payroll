@@ -75,7 +75,7 @@ int main()
     setcolor(GRAY,BLACK);
     printf("\n----- MENU -----\n");
     setcolor(WHITE,BLACK);
-    printf("a. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. [beta]Generate Payslip with Tax \n0. Exit\n\nInput: ");
+    printf("a. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. [beta]Generate Payslip with Tax \nf. Show Payslip History\n0. Exit\n\nInput: ");
     scanf(" %c", &user);fflush(stdin);
     
     clrscr();
@@ -90,6 +90,7 @@ int main()
             deleteEmployee(&list, id);
             break;
         case 'c':
+            displayList(list);
             printf("Input ID of employee to EDIT: ");
             scanf("%d", &id);
             editEmployee(list, id);
@@ -97,15 +98,6 @@ int main()
         case 'd':
             displayList(list);
             break;
-        case 'f': //not in menu anymore. just keeping it here until tax is final
-        	printf("Input ID of employee to generate PaySlip:\n");
-          	scanf("%d", &id);
-          	printf("Input hours of work:\n");
-          	scanf("%f", &hrsWork);
-          	printf("Input hours of OverTime(Optional-- Enter 0(zero) for empty value)):\n");
-          	scanf("%f", &overTime);
-        	displayPaySlip(id,hrsWork,overTime,list,tnList);
-        	break;
         case 'e':
         	printf("Input ID of employee to generate PaySlip:\n");
           	scanf("%d", &id);
@@ -115,9 +107,18 @@ int main()
           	scanf("%f", &overTime);
         	displayPaySlipWithTax(id,hrsWork,overTime,list);
         	break;
-		case 'h':
+		case 'f':
 			showPayslipHistoryData(tnList);
 			break;
+        case 'g': //not in menu anymore. just keeping it here until tax is final
+        	printf("Input ID of employee to generate PaySlip:\n");
+          	scanf("%d", &id);
+          	printf("Input hours of work:\n");
+          	scanf("%f", &hrsWork);
+          	printf("Input hours of OverTime(Optional-- Enter 0(zero) for empty value)):\n");
+          	scanf("%f", &overTime);
+        	displayPaySlip(id,hrsWork,overTime,list,tnList);
+        	break;
         case '0':
             break;
         default:
