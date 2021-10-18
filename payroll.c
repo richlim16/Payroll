@@ -48,7 +48,6 @@ int editEmployee(nPtr list, unsigned int id);
 void displayList(nPtr list);
 void displayEmployee(employeetype e);
 int findEmployee(nPtr list, unsigned int id, employeetype *e); //just scrolls through the list and returns 1 if the employee is found, otherwise returns 0
-void calculatePay(nPtr list);
 
 void saveToFile(char *filename, nPtr list);
 void readFromFile(char *filename, nPtr *list);
@@ -76,7 +75,7 @@ int main()
     setcolor(GRAY,BLACK);
     printf("\n----- MENU -----\n");
     setcolor(WHITE,BLACK);
-    printf("a. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. Calculate Pay\nf. Generate PaySlip \ng. [beta]Generate Payslip with Tax \n0. Exit\n\nInput: ");
+    printf("a. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. [beta]Generate Payslip with Tax \n0. Exit\n\nInput: ");
     scanf(" %c", &user);fflush(stdin);
     
     clrscr();
@@ -98,10 +97,7 @@ int main()
         case 'd':
             displayList(list);
             break;
-        case 'e':
-        	calculatePay(list);
-        	break;
-        case 'f':
+        case 'f': //not in menu anymore. just keeping it here until tax is final
         	printf("Input ID of employee to generate PaySlip:\n");
           	scanf("%d", &id);
           	printf("Input hours of work:\n");
@@ -110,7 +106,7 @@ int main()
           	scanf("%f", &overTime);
         	displayPaySlip(id,hrsWork,overTime,list,tnList);
         	break;
-        case 'g':
+        case 'e':
         	printf("Input ID of employee to generate PaySlip:\n");
           	scanf("%d", &id);
           	printf("Input hours of work:\n");
@@ -351,34 +347,6 @@ int findEmployee(nPtr list, unsigned int id, employeetype *e)
 	}
 	
 	return retval;
-}
-void calculatePay(nPtr list)
-{
-	unsigned int id;
-	float otpay, normalpay, hrs, ot;
-	employeetype e;
-	
-	printf("\nPlease enter the ID number of the employee: ");
-	scanf("%u", &id);
-	
-	if(findEmployee(list, id, &e)){//findEmployee will return 1 if the employee is found, otherwise returns 0
-		displayEmployee(e);
-		printf("\n\nPlease enter # of hours worked(not including OT): ");
-		scanf("%f", &hrs);
-		printf("Please enter # of hours worked in OT: ");
-		scanf("%f", &ot);
-		
-		normalpay = e.rate * hrs;
-		otpay = e.rate * 1.5 * ot;
-		
-		printf("\nNormal pay: Php %.2f", normalpay);
-		printf("\nOvertime pay(150%): Php %.2f", otpay);
-		printf("\nTotal pay: Php %.2f\n", normalpay+otpay);
-	}
-	else{
-		printf("\nError! Employee with ID %u not found!\n", id);
-	}
-	
 }
 
 timeStamp displayPaySlip(unsigned int id,float hoursWork,float overTime,nPtr list, tnPtr tnList)
