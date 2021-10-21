@@ -53,7 +53,7 @@ void saveToFile(char *filename, nPtr list);
 void readFromFile(char *filename, nPtr *list);
 
 timeStamp displayPaySlip(unsigned int id, float hoursWork, float overTime, nPtr list, tnPtr tnList);
-timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtimeHours, nPtr list);
+timeStamp displayPaySlipWithTax(unsigned int id, nPtr list, tnPtr tnList);
 float calculateSSSContribution(float grosspay);
 float calculatePagIbigContribution(float grosspay);
 float calculatePhilHealthContribution(float grosspay);
@@ -61,7 +61,11 @@ float calculatePhilHealthContribution(float grosspay);
 void addPayslipToList(timeStamp timeStamp, tnPtr *tnList);
 void appendPayslipToFile(char *payslipFileName, timeStamp timeStamp);
 void readFromPayslipFile(char *payslipFileName, tnPtr *tnList);
-void showPayslipHistoryData(tnPtr tnList);
+
+//changed to float data type (revert back to void)
+float showPayslipHistoryData(tnPtr tnList);
+
+float getGrossPay(employeetype *e, tnPtr tnList);
 int main()
 {
   nPtr list = NULL;
@@ -101,11 +105,12 @@ int main()
         case 'e':
         	printf("Input ID of employee to generate PaySlip:\n");
           	scanf("%d", &id);
-          	printf("Input hours of work:\n");
-          	scanf("%f", &hrsWork);
-          	printf("Input hours of overtime work:\n");
-          	scanf("%f", &overTime);
-        	displayPaySlipWithTax(id,hrsWork,overTime,list);
+//          	printf("Input hours of work:\n");
+//          	scanf("%f", &hrsWork);
+//          	printf("Input hours of overtime work:\n");
+//          	scanf("%f", &overTime);
+			//the input for no. of hours worked and overtime was removed temporarily
+        	displayPaySlipWithTax(id,list,tnList);
         	break;
 		case 'f':
 			showPayslipHistoryData(tnList);
@@ -421,7 +426,7 @@ void addPayslipToList(timeStamp newtimeStamp, tnPtr *tnList){
 	}
 }
 
-void showPayslipHistoryData(tnPtr tnList){
+float showPayslipHistoryData(tnPtr tnList){
 	
 	tnPtr trav;
    	printf("\n----------------------------------------\n");
@@ -431,7 +436,7 @@ void showPayslipHistoryData(tnPtr tnList){
 		
 		printf("Date:\t %s \t\n", trav->timeStamp.date);
 		printf("     \t %s \t\n", trav->timeStamp.time);
-
+	
 		printf("\n\n %s %c %s \t ID: %d \n", trav->timeStamp.employee.name.fname, trav->timeStamp.employee.name.mi, trav->timeStamp.employee.name.lname,trav->timeStamp.employee.id);
 		printf("Total Pay: %.2f\n\n", trav->timeStamp.grosspay);
 		printf("----------------------------------------\n");
@@ -521,40 +526,38 @@ float calculateSSSContribution(float grosspay)
 
 float calculatePagIbigContribution(float grosspay)
 {
-	//if monthly basic salary is between 1,000.00 and 1,500.00
-	float lowerContribution = 0.01;
+	//following the 2021 Pag-Ibig contributions table 
+	float monthly_compensation = 1500.00;
+	//if employee earns less than or equal to 1,500 a month, then 1% is deducted. 2% if more that 1,500
+	float employee_share = (grosspay <= monthly_compensation) ? 0.01 : 0.02;
 	
-	//if monthly basic salary is higher than 1,500.00
-	float higherContribution = 0.02;
-	
-	float retVal = 0.00;
-	
-	if(grosspay >= 1000 && grosspay <= 1500){
-		retVal = grosspay * lowerContribution;
-	} else {
-		retVal = grosspay * higherContribution;
-	}
+	float retVal = grosspay * employee_share;
 	
 	return retVal;
 }
 
 float calculatePhilHealthContribution(float grosspay)
-{
-	//based on the PhilHealth Premium Rate for 2020 (PhilHealth is still following the 2020 rate)
+{	
+	
+	//fixed monthly salaries
 	float low_monthly_salary = 10000;
+	float high_monthly_salary = 70000.00;
+	
+	//for salaries between 10,000 and 70,000
 	float mid_monthly_salary_minimum = 10000.01;
 	float mid_monthly_salary_maximum = 69999.99;
-	float high_monthly_salary = 70000.00;
+	
+	//increase was suspended in 2021 due to COVID-19 issues to the people
 	float monthly_premium_rate = 0.03;
 	
-	//employee share
+	//employee share is 50%
 	int employee_share = 2;
 	
 	//fixed rates
 	int low_fixed_rate = 175;
 	int high_fixed_rate = 1225;
 	
-	float retVal = 0;
+	float retVal;
 	
 	if(grosspay <= low_monthly_salary){
 		retVal = low_fixed_rate;
@@ -566,7 +569,61 @@ float calculatePhilHealthContribution(float grosspay)
 	return retVal;
 }
 
-timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtimeHours, nPtr list)
+float calculateWithholdingTax(float taxable_income){
+	
+	//based on the Withholding Tax Table effective until Dec 2022
+	float compensation_levels[5][2] = 
+	{
+		{0, 20833},	
+		{20833, 33333},
+		{33333, 66667},
+		{66667, 166667},
+		{166667, 666667}
+	};
+	
+	float prescribed_minimum_tax[6][2] = 
+	{
+		{0}, 
+		{0, 0.2}, 
+		{2500, 0.25}, 
+		{10833.33, 0.3}, 
+		{40833, 0.32}, 
+		{200833.33, 0.35}
+	};
+	//based on the Withholding Tax Table effective until Dec 2022
+	
+	float retVal;
+	int row = 0;
+	int col = 0;
+	int level = 0;
+	int max_tax_level = 5;
+	int max_compensation_level = 4;
+	int tax_level;
+	int size = sizeof(compensation_levels) / (sizeof(int) * 2);
+
+	for(row = 0; row < 5; row++){
+		if(compensation_levels[row][0] < taxable_income && taxable_income < compensation_levels[row][1]){
+			level = row;
+		}
+	}
+	
+	if(taxable_income > compensation_levels[max_compensation_level][1]){
+		level = max_compensation_level;
+		tax_level = max_tax_level;
+	}
+	
+	if(level == 0){
+		retVal = taxable_income;
+	} else if(level == 4) {
+		retVal = (prescribed_minimum_tax[tax_level][0] + (taxable_income - compensation_levels[level][1])) * prescribed_minimum_tax[tax_level][1];
+	} else {
+		retVal = (prescribed_minimum_tax[level][0] + (taxable_income - compensation_levels[level][0])) * prescribed_minimum_tax[level][1];
+	}
+	
+	return retVal;
+}
+
+timeStamp displayPaySlipWithTax(unsigned int id, nPtr list, tnPtr tnList)
 {
 	time_t rawtime;
 	struct tm *info;
@@ -578,11 +635,11 @@ timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtime
 	char stringValue[80];
 	timeStamp retVal;
 	
-	int avgWorkingDays = 21;
 	float grosspay;
 	float otpay;
-	float netpay;
-	float totalEmployeeContributions = 0;
+	float net_income;
+	float totalEmployeeContributions;
+	float taxable_income;
 	
 	info = localtime( &rawtime );
 	//transform the structure time details to string
@@ -591,14 +648,13 @@ timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtime
 	
 	if(findEmployee(list, id, &e)){
 		
-		normalpay = e.rate * hoursWork;
-		
-		otpay = (e.rate * 1.5) * overtimeHours;
-		grosspay = (normalpay * avgWorkingDays) + otpay;
+		grosspay = getGrossPay(&e,tnList);
 		totalEmployeeContributions += calculateSSSContribution(grosspay);
 		totalEmployeeContributions += calculatePagIbigContribution(grosspay);
 		totalEmployeeContributions += calculatePhilHealthContribution(grosspay);
-		netpay = grosspay - totalEmployeeContributions;
+		taxable_income = grosspay - totalEmployeeContributions;
+		
+		net_income = calculateWithholdingTax(taxable_income);
 		
  		sprintf(stringValue, "%g", normalpay);	
  		
@@ -608,11 +664,11 @@ timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtime
    		printf("%24s\n\n","sample address");
    		printf("%5s %d %15s %5s \n","Employee ID: ",e.id, "Date: ",date);
    		printf("%5s %s %s, %c \n\n","Name: ",e.name.lname,e.name.fname,e.name.mi);
-   		printf("%5s %.2f \n","Number of Hours Work(w/ or w/o OT): ", hoursWork);
    		printf("%5s %.2f \n\n","Employee Rate: ",e.rate);
    		printf("%5s %.2f\n","Gross Pay(including Overtime Compensation): ",grosspay);
    		printf("%5s %.2f \n\n","Total Employee Contributions: ",totalEmployeeContributions);
-   		printf("%5s %.2f\n","Net Pay(amount after deductions): ",netpay);
+   		printf("%5s %.2f\n","Taxable Income: ",taxable_income);
+   		printf("%5s %.2f\n","Net Income: ",net_income);
    		printf("%5s %15s \n\n","Prepared By: ", "Approved By: ");
    		printf("------------------------------------------------------------\n");
    		
@@ -623,4 +679,14 @@ timeStamp displayPaySlipWithTax(unsigned int id, float hoursWork, float overtime
 	}
 	
 	return retVal;
+}
+
+float getGrossPay(employeetype *e, tnPtr tnList)
+{
+	float grosspay = 0;
+	tnPtr trav;
+	for(trav = tnList; trav != NULL; trav = trav->next){
+		grosspay += trav->timeStamp.grosspay;
+	}
+	return grosspay;
 }
