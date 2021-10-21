@@ -309,6 +309,10 @@ void readFromPayslipFile(char *payslipFileName, tnPtr *tnList)
     tnPtr temp, *trav;
 	int count=0;
     fp = fopen(payslipFileName, "r");
+    
+    if(*tnList != NULL){
+    	*tnList = NULL;
+	}
     if(fp != NULL){
         temp = (tnPtr)malloc(sizeof(timeNode));
         while(fread(&temp->timeStamp, sizeof(timeStamp), 1, fp)){
@@ -317,7 +321,6 @@ void readFromPayslipFile(char *payslipFileName, tnPtr *tnList)
           	
             if(*tnList == NULL){
             	*tnList = temp;
-
 			 }
 			else{
 			 	for(trav = tnList; (*trav) != NULL; trav = &(*trav)->next){}
