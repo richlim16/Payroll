@@ -635,6 +635,8 @@ timeStamp displayPaySlipWithTax(unsigned int id, nPtr list, tnPtr tnList)
 	char stringValue[80];
 	timeStamp retVal;
 	
+	float hrsWork;
+	float overTime;
 	float grosspay;
 	float otpay;
 	float net_income;
@@ -648,7 +650,13 @@ timeStamp displayPaySlipWithTax(unsigned int id, nPtr list, tnPtr tnList)
 	
 	if(findEmployee(list, id, &e)){
 		
-		grosspay = getGrossPay(&e,tnList);
+		printf("Input hours of work:\n");
+        scanf("%f", &hrsWork);
+        printf("Input hours of overtime work:\n");
+        scanf("%f", &overTime);
+
+		grosspay = (e.rate * hrsWork) + (e.rate * 1.5 * overTime);
+		// grosspay = getGrossPay(&e,tnList);
 		totalEmployeeContributions += calculateSSSContribution(grosspay);
 		totalEmployeeContributions += calculatePagIbigContribution(grosspay);
 		totalEmployeeContributions += calculatePhilHealthContribution(grosspay);
@@ -673,7 +681,12 @@ timeStamp displayPaySlipWithTax(unsigned int id, nPtr list, tnPtr tnList)
    		printf("------------------------------------------------------------\n");
    		
    		retVal.employee = e;
+		retVal.grosspay = net_income;
+		strcpy(retVal.date, date);
    		strcpy(retVal.time,buffer);
+
+		addPayslipToList(retVal, &tnList);
+		appendPayslipToFile("paysliplist.dat", retVal);
 	} else {
 		  printf("Employee Not Found! \n");
 	}
