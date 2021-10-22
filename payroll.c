@@ -638,7 +638,7 @@ timeStamp displayPaySlipWithTax(unsigned int id, nPtr list, tnPtr tnList)
 	float grosspay;
 	float otpay;
 	float net_income;
-	float totalEmployeeContributions;
+	float totalEmployeeContributions = 0;
 	float taxable_income;
 	
 	info = localtime( &rawtime );
