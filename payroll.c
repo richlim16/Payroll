@@ -89,6 +89,7 @@ int main()
             addEmployee(&list);
             break;
         case 'b':
+            displayList(list);
             printf("Input ID of employee to DELETE: ");
             scanf("%d", &id);
             deleteEmployee(&list, id);
@@ -103,6 +104,7 @@ int main()
             displayList(list);
             break;
         case 'e':
+            displayList(list);
         	printf("Input ID of employee to generate PaySlip:\n");
           	scanf("%d", &id);
 //          	printf("Input hours of work:\n");
