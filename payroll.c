@@ -34,7 +34,7 @@ typedef struct{
 
 typedef struct timeNode{
 	timeStamp timeStamp;
-	struct timeNode *next; 
+	struct timeNode *next;
 }timeNode, *tnPtr;
 
 void addEmployee(nPtr *list);
@@ -81,9 +81,9 @@ int main()
     setcolor(WHITE,BLACK);
     printf("a. Add Entry\nb. Delete Entry\nc. Edit Entry\nd. Display List\ne. [beta]Generate Payslip with Tax \nf. Show Payslip History\n0. Exit\n\nInput: ");
     scanf(" %c", &user);fflush(stdin);
-    
+
     clrscr();
-	
+
     switch(tolower(user)){
         case 'a':
             addEmployee(&list);
@@ -107,25 +107,11 @@ int main()
             displayList(list);
         	printf("Input ID of employee to generate PaySlip:\n");
           	scanf("%d", &id);
-//          	printf("Input hours of work:\n");
-//          	scanf("%f", &hrsWork);
-//          	printf("Input hours of overtime work:\n");
-//          	scanf("%f", &overTime);
-			//the input for no. of hours worked and overtime was removed temporarily
         	displayPaySlipWithTax(id,list,tnList);
         	break;
 		case 'f':
 			showPayslipHistoryData(tnList);
 			break;
-        case 'g': //not in menu anymore. just keeping it here until tax is final
-        	printf("Input ID of employee to generate PaySlip:\n");
-          	scanf("%d", &id);
-          	printf("Input hours of work:\n");
-          	scanf("%f", &hrsWork);
-          	printf("Input hours of OverTime(Optional-- Enter 0(zero) for empty value)):\n");
-          	scanf("%f", &overTime);
-        	displayPaySlip(id,hrsWork,overTime,list,tnList);
-        	break;
         case '0':
             break;
         default:
@@ -145,9 +131,9 @@ void addEmployee(nPtr *list)
 {
     nPtr new = (nPtr)malloc(sizeof(node));
     new->employee = getInfo();
-    
+
     employeetype e;
-    
+
     if(findEmployee(*list, new->employee.id, &e)){
     	printf("\nEmployee #%d already exists!\n", e.id);
 	} else {
@@ -316,7 +302,7 @@ void readFromPayslipFile(char *payslipFileName, tnPtr *tnList)
     tnPtr temp, *trav;
 	int count=0;
     fp = fopen(payslipFileName, "r");
-    
+
     if(*tnList != NULL){
     	*tnList = NULL;
 	}
@@ -325,7 +311,7 @@ void readFromPayslipFile(char *payslipFileName, tnPtr *tnList)
         while(fread(&temp->timeStamp, sizeof(timeStamp), 1, fp)){
             /* insert to the tn list */
 			temp->next = NULL;
-          	
+
             if(*tnList == NULL){
             	*tnList = temp;
 			 }
@@ -333,7 +319,7 @@ void readFromPayslipFile(char *payslipFileName, tnPtr *tnList)
 			 	for(trav = tnList; (*trav) != NULL; trav = &(*trav)->next){}
 				 (*trav) = temp;
 			 }
-            
+
             temp = (tnPtr)malloc(sizeof(timeNode));
         }
 
@@ -342,7 +328,7 @@ void readFromPayslipFile(char *payslipFileName, tnPtr *tnList)
     else{
         printf("\nFile may not exist / Error in opening file!");
     }
-    
+
 
 }
 
@@ -356,7 +342,7 @@ int findEmployee(nPtr list, unsigned int id, employeetype *e)
 		*e = list->employee;
 		retval = 1;
 	}
-	
+
 	return retval;
 }
 
@@ -372,19 +358,19 @@ timeStamp displayPaySlip(unsigned int id,float hoursWork,float overTime,nPtr lis
 	char stringValue[80];
 	timeStamp retVal;
 	float otpay = 0;
-	
+
    	info = localtime( &rawtime );
 	//transform the structure time details to string
    	strftime(buffer,80,"%x - %I:%M%p", info);
    	strftime(date,80,"%B %d, %Y", info);
-	
+
 	if(findEmployee(list, id, &e)){
-		
+
 		normalpay = e.rate * hoursWork;
 		if(overTime != 0){
 			otpay = e.rate * 1.5 * overTime;
-		} 		
- 		
+		}
+
 		printf("\n");
    		printf("----------------------------------------\n");
    		printf("%23s\n","COMPANY NAME");
@@ -400,7 +386,7 @@ timeStamp displayPaySlip(unsigned int id,float hoursWork,float overTime,nPtr lis
 		}
 		printf("%5s %.2f\n\n","Net Pay: ",normalpay+otpay);
    		printf("%5s %15s \n\n","Prepared By: ", "Approved By: ");
-   		
+
    		retVal.employee = e;
 		retVal.grosspay = normalpay+otpay;
    		strcpy(retVal.time,buffer);
@@ -408,7 +394,7 @@ timeStamp displayPaySlip(unsigned int id,float hoursWork,float overTime,nPtr lis
    		addPayslipToList(retVal, &tnList);
 
 		appendPayslipToFile("paysliplist.dat", retVal);
-   		
+
 	} else {
 		printf("Employee Not Found! \n");
 	}
@@ -419,7 +405,7 @@ void addPayslipToList(timeStamp newtimeStamp, tnPtr *tnList){
 	tnPtr *trav;
 	tnPtr new = (tnPtr)malloc(sizeof(timeNode));
 	new->timeStamp = newtimeStamp;
-	
+
 	if(*tnList == NULL){
 		*tnList = new;
 	}else{
@@ -429,16 +415,16 @@ void addPayslipToList(timeStamp newtimeStamp, tnPtr *tnList){
 }
 
 float showPayslipHistoryData(tnPtr tnList){
-	
+
 	tnPtr trav;
    	printf("\n----------------------------------------\n");
    	printf("%30s\n","Payslip History");
 	printf("----------------------------------------\n");
 	for(trav = tnList; trav != NULL; trav = trav->next){
-		
+
 		printf("Date:\t %s \t\n", trav->timeStamp.date);
 		printf("     \t %s \t\n", trav->timeStamp.time);
-	
+
 		printf("\n\n %s %c %s \t ID: %d \n", trav->timeStamp.employee.name.fname, trav->timeStamp.employee.name.mi, trav->timeStamp.employee.name.lname,trav->timeStamp.employee.id);
 		printf("Total Pay: %.2f\n\n", trav->timeStamp.grosspay);
 		printf("----------------------------------------\n");
@@ -473,7 +459,7 @@ void appendPayslipToFile(char *payslipFileName, timeStamp timeStamp){
     else{
         printf("\nError in saving data!");
     }
-    
+
 }
 
 float calculateSSSContribution(float grosspay)
@@ -485,41 +471,41 @@ float calculateSSSContribution(float grosspay)
 	float rangeDifference = 499.99;	//the difference between the ranges, this is added to the maximum value when the ranges increase
 	float SSSContribution = .045;	//total SSS Contribution percentage for employees effective January 2021
 	//=====base values=====
-	
+
 	//=====max values=====
 	int maxRangeValue = 24750; //max range value for monthly salary
-	int maxCredit = 20000; //max credit value 
+	int maxCredit = 20000; //max credit value
 	//=====max values=====
-	
+
 	int creditIncrement = 500;	//credit increments on every loop until the correct compensation range is found
 	float retVal;	//to be assigned the total SSS Contribution which is deducted from the monthly salary
-	
+
 	if( grosspay < maxRangeValue ){
-		
+
 		if(grosspay <= minVal){
-			retVal = credit * SSSContribution;	
+			retVal = credit * SSSContribution;
 		} else {
 			maxVal = minVal;
 			maxVal += rangeDifference;
-			
+
 			while( !(grosspay >= minVal && grosspay <= maxVal) && minVal != maxRangeValue){
 				if(credit == maxCredit){
 					credit = maxCredit;
 				} else {
 					credit += creditIncrement;
-				}	
+				}
 //				maxVal = minVal = ceil(maxVal);
 				maxVal += rangeDifference;
 			}
-			
+
 			if(minVal == maxRangeValue){
 				retVal = credit * SSSContribution;
 			}
 
-      //the increment always stops a level lower than the proper compensation range, will fix 
-			retVal = (credit + creditIncrement) * SSSContribution;			
+      //the increment always stops a level lower than the proper compensation range, will fix
+			retVal = (credit + creditIncrement) * SSSContribution;
 		}
-		
+
 	} else {
 		retVal = maxCredit * SSSContribution;
 	}
@@ -528,39 +514,39 @@ float calculateSSSContribution(float grosspay)
 
 float calculatePagIbigContribution(float grosspay)
 {
-	//following the 2021 Pag-Ibig contributions table 
+	//following the 2021 Pag-Ibig contributions table
 	float monthly_compensation = 1500.00;
 	//if employee earns less than or equal to 1,500 a month, then 1% is deducted. 2% if more that 1,500
 	float employee_share = (grosspay <= monthly_compensation) ? 0.01 : 0.02;
-	
+
 	float retVal = grosspay * employee_share;
-	
+
 	return retVal;
 }
 
 float calculatePhilHealthContribution(float grosspay)
-{	
-	
+{
+
 	//fixed monthly salaries
 	float low_monthly_salary = 10000;
 	float high_monthly_salary = 70000.00;
-	
+
 	//for salaries between 10,000 and 70,000
 	float mid_monthly_salary_minimum = 10000.01;
 	float mid_monthly_salary_maximum = 69999.99;
-	
+
 	//increase was suspended in 2021 due to COVID-19 issues to the people
 	float monthly_premium_rate = 0.03;
-	
+
 	//employee share is 50%
 	int employee_share = 2;
-	
+
 	//fixed rates
 	int low_fixed_rate = 175;
 	int high_fixed_rate = 1225;
-	
+
 	float retVal;
-	
+
 	if(grosspay <= low_monthly_salary){
 		retVal = low_fixed_rate;
 	} else if(grosspay >= mid_monthly_salary_minimum && grosspay <= mid_monthly_salary_maximum){
@@ -572,28 +558,28 @@ float calculatePhilHealthContribution(float grosspay)
 }
 
 float calculateWithholdingTax(float taxable_income){
-	
+
 	//based on the Withholding Tax Table effective until Dec 2022
-	float compensation_levels[5][2] = 
+	float compensation_levels[5][2] =
 	{
-		{0, 20833},	
+		{0, 20833},
 		{20833, 33333},
 		{33333, 66667},
 		{66667, 166667},
 		{166667, 666667}
 	};
-	
-	float prescribed_minimum_tax[6][2] = 
+
+	float prescribed_minimum_tax[6][2] =
 	{
-		{0}, 
-		{0, 0.2}, 
-		{2500, 0.25}, 
-		{10833.33, 0.3}, 
-		{40833, 0.32}, 
+		{0},
+		{0, 0.2},
+		{2500, 0.25},
+		{10833.33, 0.3},
+		{40833, 0.32},
 		{200833.33, 0.35}
 	};
 	//based on the Withholding Tax Table effective until Dec 2022
-	
+
 	float retVal;
 	int row = 0;
 	int col = 0;
@@ -608,12 +594,12 @@ float calculateWithholdingTax(float taxable_income){
 			level = row;
 		}
 	}
-	
+
 	if(taxable_income > compensation_levels[max_compensation_level][1]){
 		level = max_compensation_level;
 		tax_level = max_tax_level;
 	}
-	
+
 	if(level == 0){
 		retVal = taxable_income;
 	} else if(level == 4) {
@@ -621,7 +607,7 @@ float calculateWithholdingTax(float taxable_income){
 	} else {
 		retVal = (prescribed_minimum_tax[level][0] + (taxable_income - compensation_levels[level][0])) * prescribed_minimum_tax[level][1];
 	}
-	
+
 	return retVal;
 }
 
@@ -636,7 +622,7 @@ timeStamp displayPaySlipWithTax(unsigned int id, nPtr list, tnPtr tnList)
 	time( &rawtime );
 	char stringValue[80];
 	timeStamp retVal;
-	
+
 	float hrsWork;
 	float overTime;
 	float grosspay;
@@ -644,14 +630,14 @@ timeStamp displayPaySlipWithTax(unsigned int id, nPtr list, tnPtr tnList)
 	float net_income;
 	float totalEmployeeContributions = 0;
 	float taxable_income;
-	
+
 	info = localtime( &rawtime );
 	//transform the structure time details to string
 	strftime(buffer,80,"%x - %I:%M%p", info);
 	strftime(date,80,"%B %d, %Y", info);
-	
+
 	if(findEmployee(list, id, &e)){
-		
+
 		printf("Input hours of work:\n");
         scanf("%f", &hrsWork);
         printf("Input hours of overtime work:\n");
@@ -663,11 +649,11 @@ timeStamp displayPaySlipWithTax(unsigned int id, nPtr list, tnPtr tnList)
 		totalEmployeeContributions += calculatePagIbigContribution(grosspay);
 		totalEmployeeContributions += calculatePhilHealthContribution(grosspay);
 		taxable_income = grosspay - totalEmployeeContributions;
-		
+
 		net_income = calculateWithholdingTax(taxable_income);
-		
- 		sprintf(stringValue, "%g", normalpay);	
- 		
+
+ 		sprintf(stringValue, "%g", normalpay);
+
 	  	printf("\n\n");
    		printf("------------------------------------------------------------\n");
    		printf("%23s\n","COMPANY NAME");
@@ -681,7 +667,7 @@ timeStamp displayPaySlipWithTax(unsigned int id, nPtr list, tnPtr tnList)
    		printf("%5s %.2f\n","Net Income: ",net_income);
    		printf("%5s %15s \n\n","Prepared By: ", "Approved By: ");
    		printf("------------------------------------------------------------\n");
-   		
+
    		retVal.employee = e;
 		retVal.grosspay = net_income;
 		strcpy(retVal.date, date);
@@ -692,7 +678,7 @@ timeStamp displayPaySlipWithTax(unsigned int id, nPtr list, tnPtr tnList)
 	} else {
 		  printf("Employee Not Found! \n");
 	}
-	
+
 	return retVal;
 }
 
